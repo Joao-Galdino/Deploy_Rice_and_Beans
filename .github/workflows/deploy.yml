@@ -75,12 +75,20 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -i ~/.ssh/vps-2 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            source /home/${{ secrets.VPS_USER }}/envfile
-            mkdir -p $TARGET_DIR
-            if [ ! -d "$TARGET_DIR/.git" ]; then
-              git clone git@github.com:${{ github.actor }}/${{ github.repository }}.git $TARGET_DIR
-            fi
-            cd $TARGET_DIR
-            git pull
-            docker-compose up -d --build -p $PORT
-          EOF
+              source /home/${{ secrets.VPS_USER }}/envfile
+              
+              # Criar diretório com sudo
+              sudo mkdir -p $TARGET_DIR
+        
+              # Ajustar permissões no diretório (se necessário)
+              sudo chown -R $USER:$USER $TARGET_DIR
+        
+              # Clonar ou atualizar o repositório
+              if [ ! -d "$TARGET_DIR/.git" ]; then
+                sudo git clone git@github.com:${{ github.actor }}/${{ github.repository }}.git $TARGET_DIR
+              fi
+        
+              cd $TARGET_DIR
+              sudo git pull
+              sudo docker-compose up -d --build
+            EOF
