@@ -24,13 +24,12 @@ jobs:
           password: ${{ secrets.GHCR_PAT }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.actor | toLower }}/deploy_rice_and_beans:latest
-            ghcr.io/${{ github.actor | toLower }}/deploy_rice_and_beans:${{ github.sha }}
+        run: |
+          LOWERCASE_USER=$(echo "${GITHUB_ACTOR}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build \
+            --tag ghcr.io/$LOWERCASE_USER/deploy_rice_and_beans:latest \
+            --tag ghcr.io/$LOWERCASE_USER/deploy_rice_and_beans:${GITHUB_SHA} \
+            --push .
 
   deploy:
     runs-on: ubuntu-latest
