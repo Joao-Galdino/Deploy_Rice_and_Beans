@@ -25,10 +25,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          # Converter o nome do usuário para letras minúsculas
           LOWERCASE_USER=$(echo "${GITHUB_ACTOR}" | tr '[:upper:]' '[:lower:]')
           
-          # Construir e enviar a imagem
           docker buildx build \
             --tag ghcr.io/$LOWERCASE_USER/deploy_rice_and_beans:latest \
             --tag ghcr.io/$LOWERCASE_USER/deploy_rice_and_beans:${GITHUB_SHA} \
@@ -68,18 +66,15 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -i ~/.ssh/vps-2 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             source ./envfile
 
-            # Criar diretório se não existir
             mkdir -p $TARGET_DIR
 
-            # Clonar ou atualizar o repositório
             if [ ! -d "$TARGET_DIR/.git" ]; then
               git clone git@github.com:${{ github.actor }}/${{ github.repository }}.git $TARGET_DIR
             fi
 
-            # Atualizar código e rodar Docker Compose
             cd $TARGET_DIR
             git pull
             docker-compose up -d --build -p $PORT
