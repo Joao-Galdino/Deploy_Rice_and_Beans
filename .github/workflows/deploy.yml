@@ -55,6 +55,9 @@ jobs:
           echo "IMAGE=ghcr.io/${{ github.actor }}/deploy_rice_and_beans:latest" >> ./envfile
           echo "GIT_COMMIT_HASH=${{ github.sha }}" >> ./envfile
           echo "VPS_HOST=${{ secrets.VPS_HOST }}" >> ./envfile
+      - name: Add VPS to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS
         run: |
