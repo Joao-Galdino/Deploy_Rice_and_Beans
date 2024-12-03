@@ -1,0 +1,77 @@
+name: Deploy Rice and Beans
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+permissions:
+  packages: write
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.actor }}/deploy_rice_and_beans:latest
+            ghcr.io/${{ github.actor }}/deploy_rice_and_beans:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push-image
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Determine Environment and Create Variables
+        run: |
+          BASE_DIR="/var/www/deploy_rice_and_beans"
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            TARGET_DIR="$BASE_DIR/prod"
+            PORT="8000"
+          else
+            TARGET_DIR="$BASE_DIR/dev"
+            PORT="8001"
+          fi
+          echo "BASE_DIR=$BASE_DIR" >> ./envfile
+          echo "TARGET_DIR=$TARGET_DIR" >> ./envfile
+          echo "PORT=$PORT" >> ./envfile
+          echo "IMAGE=ghcr.io/${{ github.actor }}/deploy_rice_and_beans:latest" >> ./envfile
+          echo "GIT_COMMIT_HASH=${{ github.sha }}" >> ./envfile
+          echo "VPS_HOST=${{ secrets.VPS_HOST }}" >> ./envfile
+
+      - name: Deploy to VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            source ./envfile
+
+            # Criar diretório se não existir
+            mkdir -p $TARGET_DIR
+
+            # Clonar ou atualizar o repositório
+            if [ ! -d "$TARGET_DIR/.git" ]; then
+              git clone git@github.com:${{ github.actor }}/${{ github.repository }}.git $TARGET_DIR
+            fi
+
+            # Atualizar código e rodar Docker Stack
+            cd $TARGET_DIR
+            git pull
+            docker-compose up -d --build -p $PORT
+          EOF

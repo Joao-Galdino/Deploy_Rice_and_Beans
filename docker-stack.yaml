@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    image: ${IMAGE}
+    ports:
+      - "${PORT}:8000"
+    environment:
+      - GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
+      #Adicionar aqui as variáveis de ambiente(Que ficam no .env do projeto)
+      - ALLOWED_HOST=${VPS_HOST}
