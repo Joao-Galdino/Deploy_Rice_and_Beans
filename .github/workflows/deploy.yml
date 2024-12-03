@@ -29,8 +29,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.actor }}/deploy_rice_and_beans:latest
-            ghcr.io/${{ github.actor }}/deploy_rice_and_beans:${{ github.sha }}
+            ghcr.io/${{ github.actor | toLower }}/deploy_rice_and_beans:latest
+            ghcr.io/${{ github.actor | toLower }}/deploy_rice_and_beans:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
